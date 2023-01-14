@@ -1,42 +1,57 @@
-from generate_queue import QueueHandler
-from handler import MessageHandler
-import os,sys
-import pathlib,json
-def create_queue(queue_name = ''):
-    try:
-        call_queue_handler = QueueHandler(queue_name)
-        response_from_queue_handler = call_queue_handler.generate_queue()
-        return response_from_queue_handler
-    except Exception as e:
-        return response_from_queue_handler
-    
+#Python Imports
+import sys
 
-def read_message_from_queue(queue_name = ''):
+#Project Imports
+from handler import MessageHandler
+
+
+    
+""" Responsible for read message from queue.This is wrapper function """
+def read_message_from_queue(queue_name = '',delete_message=False):
     try:
         call_message_handler = MessageHandler(queue_name=queue_name)
         messages = call_message_handler.read_message()
-        print(type(messages))
+        if len(messages) < 1:
+            sys.stdout.write('Your Queue is Currently Empty'+'\n')
+            return
         for message in messages:
-            print('sasas',message.get('body'))
-        return messages
+            sys.stdout.write("(Message Id:"+ message.get('id') + "  " + "Message Body:" + message.get('body') +")" +'\n' )
+            delete_response = delete_message_in_queue(queue_name = queue_name,id = message.get('id')) if delete_message else False 
+            if delete_response:
+                sys.stdout.write('After Read Message "{0}" Delete Successfully'.format(message.get('id')) +'\n')
+            else:
+                sys.stdout.write('Message doesn\'t Delete'+'\n')
+            return
     except Exception as e:
-        print(e)
+        print(e.args[0])
+        sys.stdout.write("Something Wrong for read message --")
         
-def write_message_in_queue(queue_name = '',message=''):
+
+def delete_message_in_queue(queue_name = '',id=''):
     try:
-        call_message_handler = MessageHandler(queue_name = queue_name,message_body = message)
-        message_response = call_message_handler.write_message()
-        return message_response
+        call_message_handler = MessageHandler(queue_name = queue_name,message_id = id)
+        delete_response = call_message_handler.delete_message()
+        if delete_response:
+                sys.stdout.write( '"{0}" Delete Successfully'.format(id) +'\n')
+        else:
+            sys.stdout.write('Message doesn\'t Delete'+'\n')
+        return
     except Exception as e:
-        exception_message = str(e)
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = os.path.split(
-            exception_traceback.tb_frame.f_code.co_filename)[1]
-        print('Raised error due to ' +
-              (f"An Exception Occured. \n Exception Type: {str(exception_type)}. Arguments: [{exception_message}]. File Name: {filename}, Line no: {exception_traceback.tb_lineno}"))
-        return message_response
+        print(e.args[0])
+        sys.stdout.write('Message doesn\'t Delete'+'\n')
+        return
+
+""" Using this function you can receieve your message from the queue.Obviously you can pass the queue name and if you delete message then pass delete message True.
+    Note: After call this function delete all message from the queue.
+    Example : read_message_from_queue(queue_name='test',delete_message=False)
+"""
+
+# read_message_from_queue(queue_name='test',delete_message=False)
 
 
-print(read_message_from_queue(queue_name='test'))
-# print(create_queue(queue_name='test'))
-# print(write_message_in_queue(queue_name='test',message ='Hello One'))
+"""
+    You can delete specific message from your queue by passing the message id.
+    Example : delete_message_in_queue(queue_name='test',id= '394a931c-5c60-49e7-8af8-610794ebd1')
+
+"""
+# delete_message_in_queue(queue_name='test',id= '2dec6bc5-9f26-4365-8128-2a8f072238c7')
